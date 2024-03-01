@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: data-reel
+  annotations:
+    scenarios.ai.sap.com/description: "DataIntroUpdated"
+    scenarios.ai.sap.com/name: "rm-data-testmain"
+    executables.ai.sap.com/description: "Ingesting data"
+    executables.ai.sap.com/name: "rm-p3main"
+    artifacts.ai.sap.com/dataset.kind: "dataset"
+    artifacts.ai.sap.com/model.kind: "model"
+  labels:
+    scenarios.ai.sap.com/id: "learning-datalines-hpmain"
+    ai.sap.com/version: "1.0"
+spec:
+  imagePullSecrets:
+    - name: predictive-maintenance
+  entrypoint: pmpipeline
+  arguments: {}
+  templates:
+    - name: pmpipeline
+      steps:
+        - - name: pmpredictor
+            template: pmcodeblock
+    - name: pmcodeblock
+      inputs:
+        artifacts:
+          - name: pmdataset
+            path: /app/data/
+      outputs:
+        artifacts:
+          - name: pmmodelad
+            globalName: pmmodelad
+            path: /app/model/
+            archive:
+              none: {}
+      container:
+        image: docker.io/samikshamahore/final:01
+        command: ["/bin/sh", "-c"]
+        args:
+          - "ls /app/src && ls /app/data/Dataset/demo && python /app/src/train.py"
