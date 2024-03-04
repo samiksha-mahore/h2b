@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: serverless-pipeline-hb01
+  annotations:
+    scenarios.ai.sap.com/description: "Inferencing"
+    scenarios.ai.sap.com/name: "hb-01"
+    executables.ai.sap.com/description: "Predict and send data"
+    executables.ai.sap.com/name: "hb-predict-exe"
+    artifacts.ai.sap.com/hpdataset.kind: "dataset"
+    artifacts.ai.sap.com/hpmodel.kind: "model"
+  labels:
+    scenarios.ai.sap.com/id: "hb-finalscenario-id"
+    ai.sap.com/version: "1.0"
+spec:
+  imagePullSecrets:
+    - name: predictive-maintenance
+  entrypoint: pmfpipeline
+  templates:
+  - name: pmfpipeline
+    steps:
+    - - name: pmfpredictor
+        template: pmfcodeblock
+  - name: pmfcodeblock
+    metadata:
+      labels:
+          ai.sap.com/resourcePlan: starter
+    inputs:
+      artifacts:
+        - name: pmmodel
+          path: /app/model/
+    container:
+      image: docker.io/samikshamahore/hbservfetch:01
+      command: ["/bin/sh", "-c"]
+      args:
+          - "ls /app/src && ls /app/model && python /app/src/Serverlessrm.py"
