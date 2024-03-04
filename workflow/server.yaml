@@ -1,0 +1,49 @@
+apiVersion: ai.sap.com/v1alpha1
+kind: ServingTemplate
+metadata:
+  name: serverhb
+  annotations:
+    scenarios.ai.sap.com/description: "Learning to predict reel matching"
+    scenarios.ai.sap.com/name: "hb serv"
+    executables.ai.sap.com/description: "Create online server to make live predictions"
+    executables.ai.sap.com/name: "server"
+    artifacts.ai.sap.com/housepricemodel.kind: "model"
+    spec.template.metadata.labels: "object"
+    spec.template.metadata.annotations: "object"
+  labels:
+    scenarios.ai.sap.com/id: "learning-datalines"
+    ai.sap.com/version: "1.0"
+spec:
+  inputs:
+    artifacts:
+      - name: pmmodel
+    parameters:
+      - name: greetmessage
+        type: string
+  template:
+    apiVersion: "serving.kserve.io/v1beta1"
+    metadata:
+      annotations: |
+        autoscaling.knative.dev/metric: concurrency
+        autoscaling.knative.dev/target: "1"
+        autoscaling.knative.dev/targetBurstCapacity: "0"
+      labels: |
+        ai.sap.com/resourcePlan: "starter"
+    spec: |
+      predictor:
+        imagePullSecrets:
+          - name: hacktobuild
+        minReplicas: 1
+        maxReplicas: 5
+        containers:
+          - name: kserve-container
+            image: "docker.io/samikshamahore/hbserver:001"
+            ports:
+              - containerPort: 9001
+                protocol: TCP
+            command: ["/bin/sh", "-c"]
+            args:
+              - set -e && echo "Starting" && gunicorn --chdir /app/src main:app -b 0.0.0.0:8084
+            env:
+              - name: STORAGE_URI
+                value: "{{inputs.artifacts.pmmodel}}"
